@@ -1,0 +1,69 @@
+# --- General / OS Files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.log
+
+# --- JetBrains (Rider & WebStorm) ---
+# Covers both IDE settings to prevent user-specific config conflicts
+.idea/
+*.sln.dotSettings.user
+*.docx
+*.gui
+*.rbr
+
+# --- Frontend (Vite + React) ---
+node_modules/
+.pnp
+.pnp.js
+
+# Testing coverage
+coverage/
+
+# Vite / Build Output
+dist/
+dist-ssr/
+*.local
+
+# Environment Variables (Frontend)
+# Keep .env but ignore local overrides containing secrets
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# npm / yarn / pnpm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# --- Backend (.NET Web API) ---
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code (Just in case a collaborator uses it)
+.vscode/
+
+# HTTP REPL and other tools
+.dotnet/
+*.generated.cs
+
+# User Secrets & Environment
+# Ensure you do not commit real secrets!
+appsettings.Local.json
+appsettings.Development.json # Optional: Remove this line if you share dev configs
+secrets.json
+
+# Rider / Resharper specifics
+_ReSharper*/
+*.[Rr]e[Ss]harper
