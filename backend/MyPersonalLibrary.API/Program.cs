@@ -7,12 +7,22 @@ builder.Services.AddDbContextFactory<LibraryDbContext>(options =>
     options.UseInMemoryDatabase("MyLibraryDb"));
 
 builder.Services
+    .AddCors(options =>
+    {
+        options.AddPolicy("AllowReactApp", policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    })
     .AddGraphQLServer()
     .RegisterDbContextFactory<LibraryDbContext>()
     .AddTypes()
     .AddProjections()
     .AddFiltering()
-    .AddSorting();
+    .AddSorting()
+    .ModifyCostOptions(o => o.EnforceCostLimits = false);
 
 var app = builder.Build();
 
@@ -23,5 +33,6 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
+app.UseCors("AllowReactApp");
 app.MapGraphQL();
 app.Run();
