@@ -1,3 +1,4 @@
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
 
@@ -10,71 +11,66 @@ const BookDetailsPage = () => {
         variables: { id: parseInt(id) }
     });
 
-    if (loading) return <p style={{ padding: '20px' }}>Loading details...</p>;
-    if (error) return <p style={{ padding: '20px', color: 'red' }}>Error: {error.message}</p>;
+    if (loading) return <div className="page-container"><p>Loading details...</p></div>;
 
-    const book = data.bookById;
+    if (error) return (
+        <div className="page-container">
+            <div className="login-error-alert">Error: {error.message}</div>
+        </div>
+    );
+
+    const book = data?.bookById;
+
+    if (!book) return <div className="page-container"><p>Book not found.</p></div>;
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-
-            <Link
-                to="/"
-                style={{
-                    display: 'inline-block',
-                    marginBottom: '20px',
-                    color: '#666',
-                    textDecoration: 'none',
-                    fontSize: '14px'
-                }}
-            >
+        <div className="page-container">
+            <Link to="/books" className="link-back">
                 ← Back to Library
             </Link>
 
-            <div style={{
-                border: '1px solid #eee',
-                borderRadius: '8px',
-                padding: '30px',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-                backgroundColor: '#fff'
-            }}>
-
-                <h1 style={{ marginTop: 0, marginBottom: '10px', color: '#333' }}>
-                    {book.title} <span style={{ fontWeight: 'normal', color: '#888', fontSize: '0.8em' }}>({book.year})</span>
+            <div className="login-card">
+                <h1 className="details-title">
+                    {book.title}
                 </h1>
 
-                <h3 style={{ marginTop: 0, color: '#555', fontWeight: '500' }}>
-                    Written by: <span style={{ color: '#0070f3' }}>{book.author?.name}</span>
-                </h3>
+                <p className="details-meta">
+                    by <strong className="text-highlight">{book.author?.name}</strong>
+                    <span style={{ margin: '0 8px', color: '#ccc' }}>|</span>
+                    {book.year}
+                </p>
 
-                <div style={{ margin: '20px 0' }}>
-                    <span style={{
-                        backgroundColor: '#f4f4f4',
-                        padding: '8px 12px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        color: '#333'
-                    }}>
-                        Current Status: <strong>{book.status}</strong>
-                    </span>
+                <hr className="divider" />
+
+                <div style={{ marginBottom: '30px' }}>
+                    <h3 style={{ marginBottom: '10px', color: '#444' }}>About this Book</h3>
+                    <p style={{ lineHeight: '1.6', color: '#555', fontSize: '1rem' }}>
+                        {book.description || "No description available for this book."}
+                    </p>
                 </div>
 
-                <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '30px 0' }} />
+                <div className="more-books-section">
+                    <h4 style={{ marginTop: 0, marginBottom: '10px', color: '#333' }}>
+                        More from {book.author?.name}:
+                    </h4>
 
-
-                <h4 style={{ marginBottom: '15px', color: '#333' }}>Other books by this author:</h4>
-
-                {book.author?.books && book.author.books.length > 0 ? (
-                    <ul style={{ paddingLeft: '20px', lineHeight: '1.6', color: '#555' }}>
-                        {book.author.books.map((b, index) => (
-                            <li key={index} style={{ marginBottom: '5px' }}>
-                                {b.title}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p style={{ color: '#999', fontStyle: 'italic' }}>No other books found.</p>
-                )}
+                    {book.author?.books && book.author.books.length > 1 ? (
+                        <ul className="more-books-list">
+                            {book.author.books
+                                .filter(b => b.title !== book.title)
+                                .map((b, index) => (
+                                    <li key={index} style={{ marginBottom: '5px' }}>
+                                        {b.title}
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    ) : (
+                        <p className="text-subtle" style={{ fontSize: '0.9em' }}>
+                            No other books listed.
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );
