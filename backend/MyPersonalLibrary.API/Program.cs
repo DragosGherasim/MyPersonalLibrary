@@ -1,27 +1,54 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MyPersonalLibrary.API.Data;
+using MyPersonalLibrary.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// DB
 builder.Services.AddDbContextFactory<LibraryDbContext>(options =>
     options.UseInMemoryDatabase("MyLibraryDb"));
 
+// AUTH + JWT
+builder.Services.AddScoped<AuthService>();
+
 builder.Services
-    .AddCors(options =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.AddPolicy("AllowReactApp", policy =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            policy.WithOrigins("http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
-    })
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+// GRAPHQL
+builder.Services
     .AddGraphQLServer()
     .RegisterDbContextFactory<LibraryDbContext>()
     .AddTypes()
     .AddProjections()
     .AddFiltering()
     .AddSorting()
+    .AddMutationConventions()
     .ModifyCostOptions(o => o.EnforceCostLimits = false);
 
 var app = builder.Build();
@@ -33,6 +60,10 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
+app.UseAuthentication();
+
 app.UseCors("AllowReactApp");
+
 app.MapGraphQL();
+
 app.Run();

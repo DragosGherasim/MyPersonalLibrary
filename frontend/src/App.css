@@ -1,0 +1,209 @@
+.login-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.login-header {
+    margin-bottom: 20px;
+    color: #333;
+    text-align: center;
+}
+
+.login-card {
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.login-error-alert {
+    padding: 15px;
+    color: #721c24;
+    background-color: #f8d7da;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #f5c6cb;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #666;
+    font-weight: bold;
+}
+
+.login-input {
+    padding: 12px 15px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-input:focus {
+    border-color: #0070f3;
+}
+
+.login-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+.login-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.login-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.page-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.page-header {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.text-subtle {
+    color: #666;
+}
+
+.text-highlight {
+    color: #0070f3;
+}
+
+/* Search Form */
+.search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 15px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #0070f3;
+}
+
+/* Reusing your existing button style, but generalized */
+.btn-primary {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Book List / Grid */
+.book-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.book-list-item {
+    border: 1px solid #eee;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: white;
+}
+
+.book-list-item h3 {
+    margin: 0 0 10px 0;
+}
+
+.book-list-item p {
+    margin: 0 0 5px 0;
+    color: #666;
+}
+
+.link-action {
+    display: inline-block;
+    margin-top: 10px;
+    color: #0070f3;
+    text-decoration: none;
+}
+
+/* Book Details Page */
+.link-back {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 20px;
+    color: #666;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.details-title {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.details-meta {
+    margin-top: 0;
+    color: #666;
+    font-size: 1.1em;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 25px 0;
+}
+
+.more-books-section {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.more-books-list {
+    padding-left: 20px;
+    margin: 0;
+    color: #555;
+}
