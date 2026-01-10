@@ -36,6 +36,9 @@ const MyLibraryPage = () => {
     return (
         <div className="page-container">
             <h1 className="page-header">My Books</h1>
+            <Link to="/books/new" style={{ display: "inline-block", marginBottom: 16 }}>
+                + Add book
+            </Link>
 
             <form onSubmit={searchBook} className="search-form">
                 <input
