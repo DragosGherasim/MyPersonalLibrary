@@ -50,40 +50,23 @@ export const CREATE_BOOK = gql`
   }
 `;
 
-export const UPDATE_BOOK = gql`
-  mutation UpdateBook($id: Int!, $title: String, $year: Int, $description: String, $authorId: Int) {
-    updateBook(input: { id: $id, title: $title, year: $year, description: $description, authorId: $authorId }) {
-      bookPayload {
-        book {
-          id
-          title
-          year
-          description
-          authorId
-        }
-      }
+export const UPDATE_BOOK_STATUS = gql`
+  mutation UpdateBookStatus($bookId: Int!, $status: BookStatus!) {
+    updateBookStatus(input: { bookId: $bookId, status: $status }) {
+      success
       errors {
         __typename
-        ... on InvalidBookYearError {
+        ... on BookNotInLibraryError {
           message
-          code
-        }
-        ... on InvalidTitleError {
-          message
-          code
-        }
-        ... on AuthorNotFoundError {
-          message
-          code
         }
         ... on BookNotFoundError {
           message
-          code
         }
       }
     }
   }
 `;
+
 
 export const DELETE_BOOK = gql`
   mutation DeleteBook($id: Int!) {
@@ -95,6 +78,43 @@ export const DELETE_BOOK = gql`
           message
           code
         }
+      }
+    }
+  }
+`;
+
+export const UPDATE_BOOK = gql`
+  mutation UpdateBook(
+    $id: Int!
+    $title: String
+    $year: Int
+    $description: String
+    $authorId: Int
+  ) {
+    updateBook(
+      input: {
+        id: $id
+        title: $title
+        year: $year
+        description: $description
+        authorId: $authorId
+      }
+    ) {
+      bookPayload {
+        book {
+          id
+          title
+          year
+          description
+          authorId
+        }
+      }
+      errors {
+        __typename
+        ... on InvalidBookYearError { message }
+        ... on InvalidTitleError { message }
+        ... on AuthorNotFoundError { message }
+        ... on BookNotFoundError { message }
       }
     }
   }

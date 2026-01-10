@@ -12,78 +12,69 @@ namespace MyPersonalLibrary.API.Types;
 
 public record BookPayload(Book Book);
 public record DeleteBookPayload(bool Success);
+public record UpdateBookStatusPayload(bool Success);
 
 [ExtendObjectType(OperationTypeNames.Mutation)]
 public static class BooksMutations
 {
-[Authorize]
-[Error(typeof(AuthorNotFoundException))]
-[Error(typeof(InvalidBookYearException))]
-[Error(typeof(InvalidTitleException))]
-public static async Task<BookPayload> CreateBook(
-    string title,
-    int year,
-    string? description,
-    int authorId,
-    [Service] IDbContextFactory<LibraryDbContext> dbFactory,
-    [Service] IHttpContextAccessor httpContextAccessor)
-{
-    if (string.IsNullOrWhiteSpace(title)) throw new InvalidTitleException();
-    if (year > 2026) throw new InvalidBookYearException(year);
-
-    await using var db = await dbFactory.CreateDbContextAsync();
-
-    var authorExists = await db.Authors.AnyAsync(a => a.Id == authorId);
-    if (!authorExists) throw new AuthorNotFoundException(authorId);
-
-    var book = new Book
+    [Authorize]
+    [Error(typeof(AuthorNotFoundException))]
+    [Error(typeof(InvalidBookYearException))]
+    [Error(typeof(InvalidTitleException))]
+    public static async Task<BookPayload> CreateBook(
+        string title,
+        int year,
+        string? description,
+        int authorId,
+        [Service] IDbContextFactory<LibraryDbContext> dbFactory,
+        [Service] IHttpContextAccessor httpContextAccessor)
     {
-        Title = title.Trim(),
-        Year = year,
-        Description = description ?? "",
-        AuthorId = authorId
-    };
+        if (string.IsNullOrWhiteSpace(title)) throw new InvalidTitleException();
+        if (year > 2026) throw new InvalidBookYearException(year);
 
-    db.Books.Add(book);
-    await db.SaveChangesAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
 
-    // ✅ Link the new book to the current user's library (UserBooks)
-    // In your model, UserId is INT, so we resolve the current user from DB.
-    var httpContext = httpContextAccessor.HttpContext;
+        var authorExists = await db.Authors.AnyAsync(a => a.Id == authorId);
+        if (!authorExists) throw new AuthorNotFoundException(authorId);
 
-    // Prefer username-based lookup (works regardless of claim type)
-    var username =
-        httpContext?.User?.FindFirstValue(ClaimTypes.Name) ??
-        httpContext?.User?.FindFirstValue("username") ??
-        httpContext?.User?.Identity?.Name;
+        var book = new Book
+        {
+            Title = title.Trim(),
+            Year = year,
+            Description = description ?? "",
+            AuthorId = authorId
+        };
 
-    if (!string.IsNullOrWhiteSpace(username))
-    {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
+        db.Books.Add(book);
+        await db.SaveChangesAsync();
 
-        if (user is not null)
+        // Add created book to current user's library (UserBooks)
+        var httpContext = httpContextAccessor.HttpContext;
+
+        var userIdClaim =
+            httpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            httpContext?.User?.FindFirstValue("sub");
+
+        if (int.TryParse(userIdClaim, out var userId))
         {
             var alreadyLinked = await db.UserBooks
-                .AnyAsync(ub => ub.UserId == user.Id && ub.BookId == book.Id);
+                .AnyAsync(ub => ub.UserId == userId && ub.BookId == book.Id);
 
             if (!alreadyLinked)
             {
                 db.UserBooks.Add(new UserBook
                 {
-                    UserId = user.Id,
+                    UserId = userId,
                     BookId = book.Id,
-                    Status = BookStatus.WantToRead // default choice
+                    Status = BookStatus.WantToRead
                 });
 
                 await db.SaveChangesAsync();
             }
         }
+
+        return new BookPayload(book);
     }
-
-    return new BookPayload(book);
-}
-
-    
 
     [Authorize]
     [Error(typeof(BookNotFoundException))]
@@ -143,7 +134,7 @@ public static async Task<BookPayload> CreateBook(
         var book = await db.Books.FirstOrDefaultAsync(b => b.Id == id)
                    ?? throw new BookNotFoundException(id);
 
-        // Optional cleanup: remove user-book links first (prevents dangling rows)
+        // remove user-book links first
         var links = await db.UserBooks.Where(ub => ub.BookId == id).ToListAsync();
         if (links.Count > 0)
         {
@@ -154,5 +145,40 @@ public static async Task<BookPayload> CreateBook(
         await db.SaveChangesAsync();
 
         return new DeleteBookPayload(true);
+    }
+
+    [Authorize]
+    [Error(typeof(BookNotFoundException))]
+    [Error(typeof(BookNotInLibraryException))]
+    public static async Task<UpdateBookStatusPayload> UpdateBookStatus(
+        int bookId,
+        BookStatus status,
+        [Service] IDbContextFactory<LibraryDbContext> dbFactory,
+        [Service] IHttpContextAccessor httpContextAccessor)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var bookExists = await db.Books.AnyAsync(b => b.Id == bookId);
+        if (!bookExists) throw new BookNotFoundException(bookId);
+
+        var httpContext = httpContextAccessor.HttpContext;
+
+        var userIdClaim =
+            httpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            httpContext?.User?.FindFirstValue("sub");
+
+        if (!int.TryParse(userIdClaim, out var userId))
+            throw new BookNotInLibraryException(bookId);
+
+        var userBook = await db.UserBooks
+            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == bookId);
+
+        if (userBook is null)
+            throw new BookNotInLibraryException(bookId);
+
+        userBook.Status = status;
+        await db.SaveChangesAsync();
+
+        return new UpdateBookStatusPayload(true);
     }
 }

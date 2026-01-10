@@ -7,20 +7,21 @@ export const GET_MY_LIBRARY = gql`
     $order: [UserBookSortInput!]
   ) {
     myLibrary(first: $first, where: $where, order: $order) {
-        totalCount
-        edges {
-            node {
-                bookId
-                status
-           
-                book {
-                    title
-                    author {
-                        name
-                    }
-                }
+      totalCount
+      edges {
+        node {
+          bookId
+          status
+          book {
+            id
+            title
+            author {
+              id
+              name
             }
+          }
         }
+      }
     }
   }
 `;
