@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const GET_MY_LIBRARY = gql`
   query GetMyLibrary(
@@ -58,4 +58,13 @@ export const GET_BOOKS = gql`
             }
         }
     }
+`;
+
+export const GET_AUTHORS = gql`
+  query GetAuthors {
+    authors {
+      id
+      name
+    }
+  }
 `;
