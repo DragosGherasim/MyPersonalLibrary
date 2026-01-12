@@ -14,6 +14,8 @@ builder.Services.AddDbContextFactory<LibraryDbContext>(options =>
 // AUTH + JWT
 builder.Services.AddScoped<AuthService>();
 
+var jwtKey = builder.Configuration["Jwt:Key"];
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -21,11 +23,14 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+
             ValidateIssuer = false,
-            ValidateAudience = false
+            ValidateAudience = false,
         };
     });
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
 
@@ -43,6 +48,7 @@ builder.Services.AddCors(options =>
 // GRAPHQL
 builder.Services
     .AddGraphQLServer()
+    .AddAuthorization() // 
     .RegisterDbContextFactory<LibraryDbContext>()
     .AddTypes()
     .AddProjections()
@@ -60,9 +66,10 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
-app.UseAuthentication();
-
 app.UseCors("AllowReactApp");
+
+app.UseAuthentication();
+app.UseAuthorization(); 
 
 app.MapGraphQL();
 
