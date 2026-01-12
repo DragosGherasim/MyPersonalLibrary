@@ -10,11 +10,13 @@ const LoginPage = () => {
 
     const [loginUser, { loading }] = useMutation(LOGIN_USER, {
         onCompleted: (data) => {
-            const logicalErrors = data.login?.errors;
-            if (logicalErrors && logicalErrors.length > 0) {
-                setUiError(logicalErrors[0].message);
+            const businessErrors = data.login?.errors;
+
+            if (businessErrors && businessErrors.length > 0) {
+                setUiError(businessErrors[0].message);
                 return;
             }
+
             if (data.login?.token) {
                 localStorage.setItem('token', data.login.token);
                 navigate('/books');
@@ -25,10 +27,8 @@ const LoginPage = () => {
         }
     });
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
+    const handleLogin = async (formData) => {
         setUiError('');
-        const formData = new FormData(e.currentTarget);
         const username = formData.get('username');
         const password = formData.get('password');
 
@@ -50,7 +50,7 @@ const LoginPage = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleLogin} className="login-form">
+                <form action={handleLogin} className="login-form">
                     <div>
                         <label htmlFor="username" className="login-label">Username</label>
                         <input

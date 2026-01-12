@@ -15,11 +15,6 @@ builder.Services.AddDbContextFactory<LibraryDbContext>(options =>
 builder.Services.AddScoped<AuthService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey))
-{
-    // Dev fallback so the app still works even if config is missing.
-    jwtKey = "DEV_FALLBACK_KEY_CHANGE_ME_TO_A_LONG_RANDOM_SECRET_32+_CHARS";
-}
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -28,21 +23,15 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
 
             ValidateIssuer = false,
             ValidateAudience = false,
-
-            // dev-safe: prevents expired/no-exp tokens from failing
-            ValidateLifetime = false,
-            ClockSkew = TimeSpan.Zero
         };
     });
 
 builder.Services.AddHttpContextAccessor();
 
-
-// ASP.NET authorization services
 builder.Services.AddAuthorization();
 
 // CORS

@@ -1,202 +1,166 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@apollo/client/react";
+import React, { useState } from 'react';
+import { useMutation } from '@apollo/client/react';
+import { Link } from 'react-router-dom';
+import { CREATE_AUTHOR_MUTATION, ADD_BOOK_MUTATION } from '../graphql/mutations';
 
-import { GET_AUTHORS } from "../graphql/queries";
-import { CREATE_AUTHOR, CREATE_BOOK } from "../graphql/mutations";
+const AddBookPage = () => {
+  const [authorName, setAuthorName] = useState('');
+  const [title, setTitle] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [description, setDescription] = useState('');
 
-export default function AddBookPage() {
-  const navigate = useNavigate();
+  const [successMessage, setSuccessMessage] = useState('');
+  const [formErrors, setFormErrors] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: authorsData, loading: authorsLoading, refetch: refetchAuthors } = useQuery(GET_AUTHORS);
-  const authors = useMemo(() => authorsData?.authors ?? [], [authorsData]);
+  const [createAuthor] = useMutation(CREATE_AUTHOR_MUTATION);
+  const [addBook] = useMutation(ADD_BOOK_MUTATION);
 
-  const [createAuthor, { loading: creatingAuthor }] = useMutation(CREATE_AUTHOR);
-  const [createBook, { loading: creatingBook }] = useMutation(CREATE_BOOK);
+  const handleCombinedSubmit = async () => {
+    setSuccessMessage('');
+    setFormErrors([]);
+    setIsSubmitting(true);
 
-  const [mode, setMode] = useState("existing"); // "existing" | "new"
-  const [errorMsg, setErrorMsg] = useState("");
+    try {
+      const authorResponse = await createAuthor({
+        variables: { name: authorName }
+      });
 
-  const [form, setForm] = useState({
-    title: "",
-    year: "",
-    description: "",
-    authorId: "",
-    newAuthorName: "",
-  });
+      const authorErrors = authorResponse.data.createAuthor.errors;
+      if (authorErrors && authorErrors.length > 0) {
+        setFormErrors(authorErrors.map(err => `Author Error: ${err.message}`));
+        setIsSubmitting(false);
+        return;
+      }
 
-  // Auto-pick first author if available
-  useEffect(() => {
-    if (!form.authorId && authors.length > 0) {
-      setForm((prev) => ({ ...prev, authorId: String(authors[0].id) }));
+      const newAuthor = authorResponse.data.createAuthor.authorPayload.author;
+      const newAuthorId = newAuthor.id;
+
+      const bookResponse = await addBook({
+        variables: {
+          title: title,
+          year: parseInt(year),
+          description: description,
+          authorId: newAuthorId
+        }
+      });
+
+      const bookErrors = bookResponse.data.addBook.errors;
+      if (bookErrors && bookErrors.length > 0) {
+        setFormErrors(bookErrors.map(err => `Book Error: ${err.message}`));
+      } else {
+        setSuccessMessage(`Success! Added "${bookResponse.data.addBook.book.title}" by ${newAuthor.name}.`);
+        setAuthorName('');
+        setTitle('');
+        setDescription('');
+      }
+
+    } catch (err) {
+      setFormErrors([err.message || "An unexpected error occurred."]);
+    } finally {
+      setIsSubmitting(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authors.length]);
-
-  const onChange = (key) => (e) => {
-    setErrorMsg("");
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
-  async function handleCreateAuthorIfNeeded() {
-    if (mode !== "new") return Number(form.authorId);
-
-    const name = form.newAuthorName.trim();
-    if (!name) {
-      setErrorMsg("Author name is required.");
-      return null;
-    }
-
-    const res = await createAuthor({ variables: { name } });
-    const payload = res?.data?.createAuthor;
-
-    if (payload?.errors?.length) {
-      const first = payload.errors[0];
-      setErrorMsg(first.message ?? `Error: ${first.__typename}`);
-      return null;
-    }
-
-    const newId = payload?.authorPayload?.author?.id;
-    if (!newId) {
-      setErrorMsg("Author creation failed.");
-      return null;
-    }
-
-    await refetchAuthors();
-    return Number(newId);
-  }
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    setErrorMsg("");
-
-    const title = form.title.trim();
-    const yearInt = Number(form.year);
-
-    if (!title) return setErrorMsg("Title is required.");
-    if (!Number.isInteger(yearInt)) return setErrorMsg("Year must be a number.");
-    if (yearInt > 2026) return setErrorMsg("Year cannot be greater than 2026.");
-
-    let authorIdInt = null;
-
-    if (mode === "existing") {
-      authorIdInt = Number(form.authorId);
-      if (!Number.isInteger(authorIdInt) || authorIdInt <= 0) {
-        return setErrorMsg("Please select an author.");
-      }
-    } else {
-      authorIdInt = await handleCreateAuthorIfNeeded();
-      if (!authorIdInt) return;
-    }
-
-    const res = await createBook({
-      variables: {
-        title,
-        year: yearInt,
-        description: form.description,
-        authorId: authorIdInt,
-      },
-    });
-
-    const payload = res?.data?.createBook;
-
-    if (payload?.errors?.length) {
-      const first = payload.errors[0];
-      setErrorMsg(first.message ?? `Error: ${first.__typename}`);
-      return;
-    }
-
-    const newBookId = payload?.bookPayload?.book?.id;
-    if (newBookId) {
-      navigate(`/books/${newBookId}`);
-    } else {
-      // fallback
-      navigate("/library");
-    }
-  }
-
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <h1 style={{ marginTop: 0 }}>Add a new book</h1>
+      <div className="page-container">
+        <Link to="/books" className="link-back">
+          ← Back to Library
+        </Link>
 
-      {errorMsg ? (
-        <div style={{ background: "#ffe2e2", border: "1px solid #ffb3b3", padding: 12, borderRadius: 8, marginBottom: 16 }}>
-          {errorMsg}
-        </div>
-      ) : null}
+        <h1 className="page-header">Add New Book</h1>
 
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
-        <label>
-          Title
-          <input value={form.title} onChange={onChange("title")} style={{ width: "100%", padding: 8, marginTop: 6 }} />
-        </label>
-
-        <label>
-          Year
-          <input value={form.year} onChange={onChange("year")} style={{ width: "100%", padding: 8, marginTop: 6 }} />
-        </label>
-
-        <label>
-          Description
-          <textarea value={form.description} onChange={onChange("description")} rows={6} style={{ width: "100%", padding: 8, marginTop: 6 }} />
-        </label>
-
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <b>Author</b>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="radio"
-              name="authorMode"
-              checked={mode === "existing"}
-              onChange={() => setMode("existing")}
-            />
-            Select existing
-          </label>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="radio"
-              name="authorMode"
-              checked={mode === "new"}
-              onChange={() => setMode("new")}
-            />
-            Create new
-          </label>
-        </div>
-
-        {mode === "existing" ? (
-          <label>
-            Choose author
-            <select
-              value={form.authorId}
-              onChange={onChange("authorId")}
-              disabled={authorsLoading}
-              style={{ width: "100%", padding: 8, marginTop: 6 }}
+        {successMessage && (
+            <div
+                className="login-error-alert"
+                style={{ backgroundColor: '#d4edda', borderColor: '#c3e6cb', color: '#155724' }}
             >
-              {authorsLoading ? <option>Loading…</option> : null}
-              {!authorsLoading && authors.length === 0 ? <option value="">No authors yet</option> : null}
-              {authors.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <label>
-            New author name
-            <input value={form.newAuthorName} onChange={onChange("newAuthorName")} style={{ width: "100%", padding: 8, marginTop: 6 }} />
-          </label>
+              {successMessage}
+            </div>
         )}
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <button type="submit" disabled={creatingBook || creatingAuthor}>
-            {creatingBook || creatingAuthor ? "Saving..." : "Create book"}
-          </button>
-          <button type="button" onClick={() => navigate(-1)}>
-            Cancel
-          </button>
+        {formErrors.length > 0 && (
+            <div className="login-error-alert">
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {formErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+              </ul>
+            </div>
+        )}
+
+        {/* --- Single Form for Both Steps --- */}
+        <div className="login-card">
+          <form action={handleCombinedSubmit} className="login-form">
+
+            <h2 className="details-title" style={{ fontSize: '1.2rem', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+              1. Author Details
+            </h2>
+
+            <div>
+              <label className="login-label">Author Name</label>
+              <input
+                  type="text"
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  className="login-input"
+                  placeholder="e.g. J.R.R. Tolkien"
+                  required
+                  disabled={isSubmitting}
+              />
+            </div>
+
+            <h2 className="details-title" style={{ fontSize: '1.2rem', borderBottom: '1px solid #eee', paddingBottom: '10px', marginTop: '20px' }}>
+              2. Book Details
+            </h2>
+
+            <div>
+              <label className="login-label">Book Title</label>
+              <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="login-input"
+                  placeholder="e.g. The Hobbit"
+                  required
+                  disabled={isSubmitting}
+              />
+            </div>
+
+            <div>
+              <label className="login-label">Year</label>
+              <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="login-input"
+                  required
+                  disabled={isSubmitting}
+              />
+            </div>
+
+            <div>
+              <label className="login-label">Description</label>
+              <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="login-input"
+                  rows="3"
+                  style={{ fontFamily: 'Arial, sans-serif' }}
+                  disabled={isSubmitting}
+              />
+            </div>
+
+            <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary"
+                style={{ marginTop: '20px', width: '100%', padding: '15px' }}
+            >
+              {isSubmitting ? 'Processing...' : 'Add Book to Library'}
+            </button>
+          </form>
         </div>
-      </form>
-    </div>
+      </div>
   );
-}
+};
+
+export default AddBookPage;
